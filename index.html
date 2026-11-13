@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050A1A">
+<title>SaFiMu AI — See Anything. Understand Everything.</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+</head>
+<body>
+
+<div id="splash" class="splash">
+  <div class="splash-logo">
+    <div class="splash-ring"></div>
+    <div class="splash-radar"></div>
+    <div class="splash-core">S</div>
+  </div>
+  <h1 class="splash-title">SaFiMu <span>AI</span></h1>
+  <p class="splash-tagline">See Anything. Understand Everything.</p>
+  <div class="splash-loader"><span></span><span></span><span></span></div>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div>
+        <div class="brand-name">SaFiMu <span>AI</span></div>
+        <div class="brand-sub">Universal Vision</div>
+      </div>
+    </div>
+    <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
+      <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></svg>
+      <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.5A9 9 0 1 1 11.5 3 7 7 0 0 0 21 12.5z"/></svg>
+    </button>
+  </header>
+
+  <main class="screens">
+    <section id="screen-home" class="screen active">
+      <div class="hero glass">
+        <div class="hero-badge">AI VISION ENGINE</div>
+        <h2>See Anything.<br><span class="grad">Understand Everything.</span></h2>
+        <p>Point your camera or upload an image. Gemini AI will explain it.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary" data-goto="scan">📷 Start Live Scan</button>
+          <button class="btn btn-ghost" id="homePickImage">🖼️ Scan Image</button>
+        </div>
+      </div>
+
+      <div class="quick-grid">
+        <button class="quick-card glass" data-goto="scan">
+          <div class="qc-icon">📷</div><div class="qc-title">Live Scan</div><div class="qc-sub">Camera detection</div>
+        </button>
+        <button class="quick-card glass" id="quickAssistant">
+          <div class="qc-icon">🤖</div><div class="qc-title">AI Assistant</div><div class="qc-sub">Ask anything</div>
+        </button>
+        <button class="quick-card glass" data-goto="history">
+          <div class="qc-icon">🕘</div><div class="qc-title">History</div><div class="qc-sub">Past scans</div>
+        </button>
+        <button class="quick-card glass" data-goto="discover">
+          <div class="qc-icon">🌐</div><div class="qc-title">Explore</div><div class="qc-sub">All categories</div>
+        </button>
+      </div>
+
+      <div class="section-head"><h3>Recent Scans</h3><button class="link-btn" data-goto="history">View all</button></div>
+      <div id="homeRecent" class="h-scroll"></div>
+      <div class="section-head"><h3>Explore Categories</h3><button class="link-btn" data-goto="discover">More</button></div>
+      <div id="homeCategories" class="cat-grid"></div>
+      <div class="section-head"><h3>Saved Objects</h3></div>
+      <div id="homeSaved" class="h-scroll"></div>
+    </section>
+
+    <section id="screen-scan" class="screen scan-screen">
+      <div class="scan-stage" id="scanStage">
+        <video id="cameraFeed" autoplay playsinline muted></video>
+        <div id="scanPlaceholder" class="scan-placeholder">
+          <div class="scan-frame"></div>
+          <h3>Real AI Vision</h3>
+          <p>Tap below to enable the camera.<br>Local AI runs automatically.</p>
+          <button id="enableCameraBtn" class="btn btn-primary">Enable Camera</button>
+          <span class="hint">🔒 Camera stays active only on this screen.</span>
+        </div>
+        
+        <div id="scanLine" class="scan-line hidden"></div>
+        <div id="bboxLayer" class="bbox-layer"></div>
+
+        <div id="zoomContainer" class="zoom-container hidden">
+          <span id="zoomValue">1.0x</span>
+          <input type="range" id="zoomSlider" min="1" max="5" step="0.1" value="1">
+        </div>
+
+        <div class="scan-topbar">
+          <button class="icon-btn on-dark" data-goto="home">←</button>
+          <div id="aiBadge" class="demo-badge loading">AI LOADING...</div>
+          <button id="toggleDetectBtn" class="icon-btn on-dark" title="Pause / Resume">⏸</button>
+        </div>
+
+        <div id="selectionBar" class="selection-bar hidden">
+          <span id="selectionCount">0 selected</span>
+          <button id="compareBtn" class="btn btn-primary small">Compare</button>
+          <button id="clearSelectionBtn" class="btn btn-ghost small">Clear</button>
+        </div>
+
+        <div class="scan-controls">
+          <button id="flashBtn" class="round-btn hidden" title="Flashlight">🔦</button>
+          <button id="flipCameraBtn" class="round-btn" title="Flip camera">⟳</button>
+          <button id="captureBtn" class="capture-btn" title="Capture & Cloud AI"></button>
+          <button id="stopCameraBtn" class="round-btn" title="Stop camera">✕</button>
+        </div>
+      </div>
+      <div class="scan-status"><p id="scanStatus">Camera is off. Tap "Enable Camera" to start preview.</p></div>
+    </section>
+
+    <section id="screen-discover" class="screen">
+      <div class="section-head"><h3>Explore Categories</h3></div>
+      <p class="muted small">Tap any category to preview sample objects.</p>
+      <div id="discoverCategories" class="cat-grid"></div>
+      <div id="categoryObjects" class="obj-list"></div>
+    </section>
+
+    <section id="screen-history" class="screen">
+      <div class="section-head"><h3>Scan History</h3><button id="clearHistoryBtn" class="link-btn danger">Clear</button></div>
+      <div id="historyList" class="obj-list"></div>
+    </section>
+
+    <section id="screen-profile" class="screen">
+      <div class="profile-card glass">
+        <div class="avatar">SA</div>
+        <div><h3>SaFiMu User</h3><p class="muted small">Explorer • Vision Enabled</p></div>
+      </div>
+      
+      <div class="profile-section glass">
+        <h4>AI Engine Settings</h4>
+        <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+          <span style="font-size: 12px; line-height: 1.4;">Google Gemini API Key<br><span class="muted" style="font-size: 10px;">(Enables 3000+ objects, Age & Gender, OCR)</span></span>
+          <input type="password" id="geminiKeyInput" placeholder="Paste API Key here..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-family: inherit;">
+          <button id="saveKeyBtn" class="btn btn-primary small" style="margin-top: 4px; width: 100%;">Save Key</button>
+        </div>
+        <div class="setting-row" style="margin-top:12px;">
+          <span>Use Local AI (Offline)</span>
+          <label class="switch"><input id="localAiSwitch" type="checkbox" checked><span></span></label>
+        </div>
+      </div>
+
+      <div class="profile-section glass">
+        <h4>Stats</h4>
+        <div class="setting-row"><span>Saved Objects</span><span id="savedCount" class="pill">0</span></div>
+        <div class="setting-row"><span>Total Scans</span><span id="scanCount" class="pill">0</span></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-goto="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
+    <button class="nav-item" data-goto="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M4 7h3l2-2h6l2 2h3v13H4z"/></svg><span>Scan</span></button>
+    <button class="nav-item" data-goto="discover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-4 2 2-6z"/></svg><span>Discover</span></button>
+    <button class="nav-item" data-goto="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
+    <button class="nav-item" data-goto="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Profile</span></button>
+  </nav>
+</div>
+
+<div id="sheetBackdrop" class="sheet-backdrop"></div>
+
+<div id="objectSheet" class="sheet">
+  <div class="sheet-handle"></div>
+  <div id="objectSheetBody" class="sheet-body"></div>
+</div>
+
+<div id="assistantSheet" class="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>SaFiMu AI Assistant <span class="pill small-pill">GEMINI</span></h3><button class="icon-btn" data-close-sheet="assistantSheet">✕</button></div>
+  <div id="chatLog" class="chat-log"></div>
+  <div class="chat-input-row"><input id="chatInput" type="text" placeholder="Ask about the scanned object…" /><button id="sendChatBtn" class="btn btn-primary small">Send</button></div>
+</div>
+
+<div id="compareSheet" class="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head"><h3>Compare Objects</h3><button class="icon-btn" data-close-sheet="compareSheet">✕</button></div>
+  <div id="compareBody" class="sheet-body"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<input id="imageInput" type="file" accept="image/*" hidden>
+
+<script src="app.js"></script>
+</body>
+</html>
